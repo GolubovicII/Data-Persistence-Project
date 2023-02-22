@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,21 +13,27 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text bestScoreText;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
     private int m_Points;
-    
+    private ScoreData sd;
+
     private bool m_GameOver = false;
 
-    
+    private void Awake()
+    {
+        UpdateBestScore();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -56,9 +64,9 @@ public class MainManager : MonoBehaviour
         else if (m_GameOver)
         {
             if (Input.GetKeyDown(KeyCode.Space))
-            {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            }
+            else if (Input.GetKeyDown(KeyCode.Escape))
+                SceneManager.LoadScene(0);
         }
     }
 
@@ -70,7 +78,18 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        ScoreManager.Instance.AddScore(new Score(ScoreManager.Instance.playerName, m_Points));
+        ScoreManager.Instance.SaveScore();
+        UpdateBestScore();
+
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    private void UpdateBestScore()
+    {
+        var scores = ScoreManager.Instance.GetHighScores().ToArray();
+        if (scores.Length != 0)
+            bestScoreText.text = $"Best Score: {scores[0].name} : {scores[0].score}";
     }
 }
